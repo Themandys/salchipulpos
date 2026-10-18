@@ -9,13 +9,13 @@ class PosSeeder extends Seeder
 {
     public function run(): void
     {
-        // Configuración oficial del negocio
-        DB::table('settings')->upsert([
+        // Configuración inicial del negocio (no sobrescribe lo que ya se cambió en Ajustes)
+        DB::table('settings')->insertOrIgnore([
             ['key' => 'business_pin', 'value' => '1234'],
             ['key' => 'business_name', 'value' => 'CUIDADO CON EL SALCHIPULPO'],
             ['key' => 'ticket_footer', 'value' => '¡Gracias por tu compra!'],
             ['key' => 'opening_cash', 'value' => '500'],
-        ], ['key'], ['value']);
+        ]);
 
         if (DB::table('products')->exists()) {
             return;
