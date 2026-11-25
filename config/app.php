@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'storefront_forward_url' => env('STOREFRONT_FORWARD_URL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
