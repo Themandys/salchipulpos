@@ -23,9 +23,10 @@ class OrderController extends Controller
      */
     public function cancel(Order $order): JsonResponse
     {
-        abort_unless($order->status === Order::StatusPending, 422, 'Este pedido ya no está pendiente.');
+        $cancelled = Order::query()->pending()->whereKey($order->id)->update(['status' => Order::StatusCancelled]);
+        abort_unless($cancelled, 422, 'Este pedido ya no está pendiente.');
 
-        $order->update(['status' => Order::StatusCancelled]);
+        $order->refresh();
 
         return response()->json(['order' => $order]);
     }

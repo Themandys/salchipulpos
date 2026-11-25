@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOrderRequest;
 use App\Models\Order;
-use App\Models\Product;
+use App\Services\OrderItems;
 use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
@@ -12,18 +12,10 @@ class OrderController extends Controller
     /**
      * Guarda el pedido de un cliente para que lo cobren en caja.
      */
-    public function store(StoreOrderRequest $request): JsonResponse
+    public function store(StoreOrderRequest $request, OrderItems $orderItems): JsonResponse
     {
         $validated = $request->validated();
-        $products = Product::query()->whereKey(collect($validated['items'])->pluck('id'))->get()->keyBy('id');
-
-        $items = collect($validated['items'])->map(fn (array $item) => [
-            'product_id' => $item['id'],
-            'name' => $products[$item['id']]->name,
-            'price' => $products[$item['id']]->price,
-            'quantity' => $item['qty'],
-            'subtotal' => round($products[$item['id']]->price * $item['qty'], 2),
-        ]);
+        $items = $orderItems->price($validated['items']);
 
         $order = Order::query()->create([
             'customer_name' => trim($validated['customer_name']),
@@ -56,6 +48,9 @@ class OrderController extends Controller
             'customer_name' => $order->customer_name,
             'items' => $order->items,
             'total' => $order->total,
+            'calories' => collect($order->items)->every(fn (array $item) => isset($item['details']['calories']))
+                ? collect($order->items)->sum(fn (array $item) => $item['details']['calories'] * $item['quantity'])
+                : null,
         ];
     }
 }

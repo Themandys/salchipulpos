@@ -1,151 +1,168 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<meta name="theme-color" content="#FBF6EC">
-<meta name="description" content="Menú de Salchipulpos: salchipulpos clásicos, BBQ, spicy, deluxe y combos. Arma tu pedido y paga en caja.">
-<title>Salchipulpos · Menú</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐙</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;700;800&display=swap" rel="stylesheet">
-@vite(['resources/css/menu.css', 'resources/js/menu.js'])
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#F9F7F2">
+  <meta name="description" content="B-CRUNCH, sabor que truena. Pide crispy chicken, tenders, salchipulpos, snacks y combos. Personaliza tu pedido y paga en caja.">
+  <meta property="og:title" content="B-CRUNCH | Crispy Chicken, Tenders & Salchipulpos">
+  <meta property="og:description" content="Sabor que truena. Arma tu pedido con tus salsas y extras favoritos.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_MX">
+  <meta property="og:url" content="{{ route('menu') }}">
+  <meta property="og:image" content="{{ asset('images/b-crunch-hero.jpg') }}">
+  <title>B-CRUNCH | Crispy Chicken, Tenders &amp; Salchipulpos</title>
+  <link rel="canonical" href="{{ route('menu') }}">
+  <link rel="icon" href="{{ asset('images/b-crunch-icon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  @vite(['resources/css/menu.css', 'resources/js/menu.js'])
 </head>
 <body>
-
-<header class="bar">
-  <a href="{{ route('menu') }}" class="bar-logo">🐙 Salchipulpos</a>
-  <div class="bar-actions">
-    <button id="cartOpen" class="bar-cart" type="button">🛒 Mi pedido <b id="cartCount">0</b></button>
-    <a href="{{ route('pos') }}" class="bar-staff" title="Acceso para el personal">👤 Personal</a>
+<header class="site-header">
+  <div class="shell nav">
+    <a class="brand" href="{{ route('menu') }}" aria-label="B-CRUNCH, inicio"><img src="{{ asset('images/b-crunch-icon.svg') }}" alt="" width="38" height="38"> B-CRUNCH</a>
+    <nav class="nav-links" aria-label="Navegación">
+      <a href="#menu">Menú</a>
+      <a href="{{ route('pos') }}">Personal</a>
+    </nav>
+    <button id="cartOpen" class="cart-button" type="button">
+      <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8h14l2 13H3L5 8Z"/><path d="M8 10V6a4 4 0 1 1 8 0v4"/></svg>
+      <span>Mi pedido</span> <b id="cartCount">0</b>
+    </button>
   </div>
 </header>
 
-<main class="poster">
+<main class="shell">
   <section class="hero">
-    <div class="hero-text">
-      <h1>Salchipulpos</h1>
-      <p class="tagline"><span></span>Alegría en tu boca<span></span></p>
-      <a href="#menu" class="hero-cta">Arma tu pedido ↓</a>
+    <div class="hero-copy">
+      <p class="hero-brand">B-CRUNCH</p>
+      <h1>Sabor que<br><em>truena.</em></h1>
+      <p class="hero-description">Crispy Chicken, Tenders &amp; Salchipulpos</p>
+      <a href="#menu" class="button hero-button">Ver el menú <span aria-hidden="true">↘</span></a>
     </div>
-    <img class="hero-img" src="{{ asset('images/salchipulpos-hero.jpg') }}" alt="Charola de salchipulpos con papas, queso y jalapeños" width="450" height="480">
+    <img class="hero-image" src="{{ asset('images/b-crunch-hero.jpg') }}" alt="Sándwich de pollo crujiente con tenders, papas y salsa" width="1536" height="1024" fetchpriority="high">
+    <div class="checker" aria-hidden="true"></div>
   </section>
 
-  <div id="menu"></div>
-  @forelse ($categories as $category)
-    @php($asCards = preg_match('/extra|topping/i', $category->name) === 1)
-    <section class="section">
-      <h2 class="brush"><span>{{ $category->name }}</span></h2>
+  <section id="menu" class="menu-section" aria-labelledby="menuTitle">
+    <div class="menu-heading">
+      <h2 id="menuTitle">Nuestro menú</h2>
+      <p>Elige tu platillo y personalízalo.</p>
+    </div>
+    @if ($categories->isNotEmpty())
+      <div class="filters" role="group" aria-label="Filtrar por categoría">
+        <button type="button" data-filter="all" aria-pressed="true">Todo</button>
+        @foreach ($categories as $category)
+          <button type="button" data-filter="{{ $category->id }}" aria-pressed="false">{{ $category->name }}</button>
+        @endforeach
+      </div>
+    @endif
 
-      @if ($asCards)
-        <div class="extras">
+    @forelse ($categories as $category)
+      <section class="category" data-category="{{ $category->id }}">
+        <h3>{{ $category->name }}</h3>
+        <div class="product-grid">
           @foreach ($category->products as $product)
-            <button type="button" class="extra js-product" data-id="{{ $product->id }}">
-              @php([$extraName, $extraPortion] = array_pad(explode(' (', $product->name, 2), 2, null))
-              <span class="extra-name"><span>{{ $extraName }}@if ($extraPortion)<br>({{ $extraPortion }}@endif</span></span>
-              <span class="extra-sep"></span>
-              <span class="extra-price">+${{ number_format($product->price, 0) }} MXN</span>
-              @if ($product->calories)
-                <span class="extra-kcal">[ +{{ $product->calories }} kcal ]</span>
-              @endif
-              @if ($product->stock <= 0)
-                <span class="sold-out">Agotado</span>
-              @endif
-            </button>
-          @endforeach
-        </div>
-      @else
-        <div class="items">
-          @foreach ($category->products as $product)
-            <button type="button" class="item js-product {{ $product->stock <= 0 ? 'is-out' : '' }}" data-id="{{ $product->id }}">
-              <span class="item-head">
-                <span class="item-name">{{ $product->name }}</span>
-                <span class="item-dots" aria-hidden="true"></span>
-                <span class="item-price">${{ number_format($product->price, 0) }} MXN</span>
+            <button type="button" class="product-card js-product" data-id="{{ $product->id }}">
+              <span class="card-top">
+                <span class="food-icon" aria-hidden="true">{{ $product->emoji }}</span>
+                @if ($product->calories !== null)<span class="kcal">~{{ number_format($product->calories) }} kcal</span>@endif
               </span>
-              <span class="item-body">
-                <span class="item-desc">{{ $product->description }}</span>
-                @if ($product->calories)
-                  <span class="item-kcal">~{{ $product->calories }} kcal</span>
+              <strong>{{ $product->name }}</strong>
+              <span class="product-description">{{ $product->description }}</span>
+              <span class="card-foot">
+                <span class="price">${{ number_format($product->price, $product->price == floor($product->price) ? 0 : 2) }} <small>MXN</small></span>
+                @if ($product->stock <= 0)
+                  <span class="muted">Agotado</span>
+                @else
+                  <span class="card-plus" aria-hidden="true">+</span>
                 @endif
               </span>
-              <span class="item-hint">{{ $product->stock <= 0 ? 'Agotado por hoy' : 'Toca para ver y agregar' }}</span>
             </button>
           @endforeach
         </div>
-      @endif
-    </section>
-  @empty
-    <p class="no-menu">Estamos preparando el menú. ¡Vuelve en un momento!</p>
-  @endforelse
-
-  <aside class="salsas">
-    <p><b>Barra de salsas libre:</b> Cátsup, mostaza, salsa Botanera y Valentina.</p>
-    <hr>
-    <small>* Los valores calóricos son aproximados por porción promedio.</small>
-  </aside>
+      </section>
+    @empty
+      <p>Estamos preparando el menú. Vuelve en un momento.</p>
+    @endforelse
+  </section>
 </main>
 
-<button id="cartBar" class="cart-bar" type="button" hidden>
-  <span id="cartBarCount">0 productos</span>
-  <strong id="cartBarTotal">$0</strong>
+<footer class="footer">
+  <div class="shell footer-content">
+    <div><strong class="brand">B-CRUNCH</strong><p>© {{ now()->year }} B-CRUNCH</p></div>
+    <div class="footer-links">
+      <a href="{{ route('pos') }}">Acceso a caja</a>
+      @if (preg_match('/^\d{10,15}$/D', $settings['whatsapp']))
+        <a href="https://wa.me/{{ $settings['whatsapp'] }}?text={{ rawurlencode('Hola, B-CRUNCH. Quiero consultar sobre un pedido.') }}" target="_blank" rel="noopener">Contactar por WhatsApp</a>
+      @endif
+      <details><summary>Información del pedido</summary><p>B-CRUNCH usa tu nombre y tus notas para identificar y preparar tu pedido. Los precios están en pesos mexicanos. Las calorías son aproximadas. Paga en caja al recoger.</p></details>
+    </div>
+  </div>
+</footer>
+
+<button id="cartBar" class="button cart-bar" type="button" hidden>
+  <span id="cartBarCount">Mi pedido</span>
+  <strong id="cartBarTotal"></strong>
 </button>
 
-{{-- Info del producto --}}
-<div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pmName">
-  <div class="sheet product-sheet">
-    <button class="sheet-close" type="button" data-close aria-label="Cerrar">✕</button>
-    <div class="pm-emoji" id="pmEmoji"></div>
-    <h3 id="pmName"></h3>
-    <p id="pmDesc" class="pm-desc"></p>
-    <div class="pm-facts">
-      <span id="pmPrice" class="pm-price"></span>
-      <span id="pmKcal" class="pm-kcal"></span>
+<dialog id="productModal" aria-labelledby="pmName">
+  <form id="productForm" class="product-sheet">
+    <header class="dialog-header">
+      <span id="pmEmoji" class="food-icon" aria-hidden="true"></span>
+      <button class="icon-button" type="button" data-close aria-label="Cerrar">×</button>
+    </header>
+    <h2 id="pmName"></h2>
+    <p id="pmDesc" class="muted"></p>
+    <div class="product-facts">
+      <strong class="price" id="pmPrice"></strong>
+      <span class="kcal" id="pmKcal"></span>
     </div>
-    <div class="pm-buy">
+    <div id="pmOptions" class="options"></div>
+    <div class="dialog-actions">
       <div class="stepper">
-        <button type="button" id="pmMinus" aria-label="Menos">−</button>
-        <span id="pmQty">1</span>
-        <button type="button" id="pmPlus" aria-label="Más">+</button>
+        <button type="button" id="pmMinus" aria-label="Quitar una porción">−</button>
+        <output id="pmQty">1</output>
+        <button type="button" id="pmPlus" aria-label="Agregar una porción">+</button>
       </div>
-      <button type="button" id="pmAdd" class="btn-red">Agregar</button>
+      <button type="submit" id="pmAdd" class="button button-red"></button>
     </div>
+    <p id="pmError" class="form-error" role="alert"></p>
+  </form>
+</dialog>
+
+<dialog id="cartModal" class="drawer" aria-labelledby="cartTitle">
+  <header class="dialog-header drawer-head">
+    <h2 id="cartTitle">Mi pedido</h2>
+    <button class="icon-button" type="button" data-close aria-label="Cerrar">×</button>
+  </header>
+
+  <div id="cartStep" class="drawer-body">
+    <div id="cartLines"></div>
+    <form id="orderForm">
+      <label>Tu nombre <input id="customerName" maxlength="60" placeholder="Nombre para recoger" required></label>
+      <label>Notas <span class="muted">(opcional)</span> <input id="customerNote" maxlength="200" placeholder="Ej. sin jalapeños"></label>
+      <div class="cart-total"><span>Total</span><strong id="cartTotal"></strong></div>
+      <p id="cartKcal" class="cart-kcal" aria-live="polite"></p>
+      <button id="orderSend" class="button button-red" type="submit">Enviar pedido</button>
+      <p id="orderError" class="form-error" role="alert"></p>
+      <p class="muted pick-up">Paga en caja al recoger.</p>
+    </form>
+    <button id="viewPending" type="button" class="text-button" hidden>Ver pedido enviado</button>
   </div>
-</div>
 
-{{-- Carrito --}}
-<div id="cartModal" class="modal modal-side" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
-  <div class="drawer">
-    <div class="drawer-head">
-      <h3 id="cartTitle">Mi pedido</h3>
-      <button class="sheet-close" type="button" data-close aria-label="Cerrar">✕</button>
-    </div>
-
-    <div id="cartStep" class="drawer-body">
-      <div id="cartLines" class="cart-lines"></div>
-      <form id="orderForm" class="order-form" autocomplete="off">
-        <label>Tu nombre <input id="customerName" maxlength="60" placeholder="Para llamarte cuando esté listo" required></label>
-        <label>Notas (opcional) <input id="customerNote" maxlength="200" placeholder="Ej. sin jalapeños"></label>
-        <div class="cart-total"><span>Total</span><strong id="cartTotal">$0</strong></div>
-        <button id="orderSend" class="btn-red btn-block" type="submit">Enviar pedido</button>
-        <p class="fine">Pagas en caja al recoger tu pedido.</p>
-      </form>
-    </div>
-
-    <div id="sentStep" class="drawer-body sent" hidden>
-      <p class="sent-label">Tu número de pedido</p>
-      <div id="sentNumber" class="sent-number">#0</div>
-      <p id="sentStatus" class="sent-status"></p>
-      <div id="sentLines" class="sent-lines"></div>
-      <button id="newOrder" class="btn-ghost btn-block" type="button">Hacer otro pedido</button>
-    </div>
+  <div id="sentStep" class="drawer-body sent" hidden>
+    <p class="sent-label">Tu número de pedido en B-CRUNCH</p>
+    <div id="sentNumber" class="sent-number"></div>
+    <p id="sentStatus" class="sent-status" aria-live="polite"></p>
+    <div id="sentLines"></div>
+    <button id="newOrder" class="button" type="button">Volver al menú</button>
   </div>
-</div>
+</dialog>
 
-<div id="toasts" class="toasts" aria-live="polite"></div>
-
-<script type="application/json" id="menuData">@json($menuProducts)</script>
+<script type="application/json" id="menuData">{!! Illuminate\Support\Js::encode($menuData) !!}</script>
 </body>
 </html>

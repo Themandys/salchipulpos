@@ -28,9 +28,9 @@ class StoreSaleRequest extends FormRequest
         return [
             'payment_method' => ['required', Rule::in([Sale::MethodCash, Sale::MethodCard])],
             'paid' => ['required_if:payment_method,'.Sale::MethodCash, 'nullable', 'numeric', 'min:0', 'max:100000'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')->where('is_active', true)],
-            'items.*.qty' => ['required', 'integer', 'min:1', 'max:999'],
+            'items' => ['exclude_with:order_id', 'required', 'array', 'min:1'],
+            'items.*.id' => ['exclude_with:order_id', 'required', 'integer', 'distinct', Rule::exists('products', 'id')->where('is_active', true)],
+            'items.*.qty' => ['exclude_with:order_id', 'required', 'integer', 'min:1', 'max:999'],
             'order_id' => ['nullable', 'integer', Rule::exists('orders', 'id')->where('status', Order::StatusPending)],
         ];
     }

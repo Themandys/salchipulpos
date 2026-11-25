@@ -24,6 +24,7 @@ class UpdateSettingsRequest extends FormRequest
     {
         return [
             'business_name' => ['sometimes', 'required', 'string', 'max:80'],
+            'whatsapp' => ['sometimes', 'nullable', 'digits_between:10,15'],
             'ticket_footer' => ['sometimes', 'nullable', 'string', 'max:160'],
             'opening_cash' => ['sometimes', 'required', 'numeric', 'min:0', 'max:1000000'],
             'business_pin' => ['sometimes', 'required', 'digits_between:4,8'],

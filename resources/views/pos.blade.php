@@ -1,24 +1,25 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<meta name="theme-color" content="#1D1310">
+<meta name="theme-color" content="#211612">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>{{ $settings['business_name'] }} · Punto de venta</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐙</text></svg>">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="{{ asset('images/b-crunch-icon.svg') }}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 @vite(['resources/css/pos.css', 'resources/js/pos.js'])
 </head>
 <body>
 
 <header class="topbar">
   <div class="brand">
-    <span class="brand-mark" aria-hidden="true">🐙</span>
+    <img class="brand-mark" src="{{ asset('images/b-crunch-icon.svg') }}" alt="" width="42" height="42">
     <div>
       <strong id="brandName">{{ $settings['business_name'] }}</strong>
       <small>Punto de venta</small>
@@ -193,6 +194,7 @@
         <header class="card-head"><h3>Ajustes del negocio</h3></header>
         <form id="settingsForm" class="settings-form" autocomplete="off">
           <label>Nombre en el ticket <input id="sName" maxlength="80" required></label>
+          <label>WhatsApp del negocio <input id="sWhatsApp" type="tel" inputmode="numeric" pattern="[0-9]{10,15}" maxlength="15" placeholder="Número con código de país"></label>
           <label>Mensaje al final del ticket <input id="sFooter" maxlength="160"></label>
           <label>Fondo de caja habitual <input id="sOpening" type="number" min="0" step="0.5"></label>
           <label>Nuevo PIN (déjalo vacío para no cambiarlo) <input id="sPin" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8"></label>

@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 class Setting extends Model
 {
     public const array Defaults = [
-        'business_name' => 'CUIDADO CON EL SALCHIPULPO',
+        'business_name' => 'B-CRUNCH',
         'ticket_footer' => '¡Gracias por tu compra!',
         'business_pin' => '1234',
         'opening_cash' => '0',
+        'whatsapp' => '',
     ];
 
     protected $primaryKey = 'key';
@@ -42,13 +43,14 @@ class Setting extends Model
     /**
      * Settings that are safe to show on the sales screen.
      *
-     * @return array{business_name: string, ticket_footer: string}
+     * @return array{business_name: string, ticket_footer: string, whatsapp: string}
      */
     public static function publicSettings(): array
     {
         return [
             'business_name' => static::value('business_name'),
             'ticket_footer' => static::value('ticket_footer'),
+            'whatsapp' => static::value('whatsapp'),
         ];
     }
 }

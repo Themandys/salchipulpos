@@ -1,2 +1,3 @@
-# salchipulpos
-Salchipulpillos
+# B-CRUNCH
+
+Crispy Chicken, Tenders & Salchipulpos

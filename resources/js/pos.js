@@ -1,5 +1,5 @@
 /* ==========================================================
-   Salchipulpos · Punto de venta
+   B-CRUNCH · Punto de venta
    Todo se guarda en el servidor (Laravel); el navegador solo muestra.
    ========================================================== */
 
@@ -35,8 +35,11 @@ const state = {
 };
 
 const productById = (id) => state.products.find((p) => p.id === Number(id));
-const orderTotal = () => [...state.order].reduce((sum, [id, qty]) => sum + (productById(id)?.price ?? 0) * qty, 0);
-const orderCount = () => [...state.order.values()].reduce((a, b) => a + b, 0);
+const orderTotal = () => state.pendingOrder?.total ?? [...state.order].reduce((sum, [id, qty]) => sum + (productById(id)?.price ?? 0) * qty, 0);
+const orderCount = () => state.pendingOrder
+  ? state.pendingOrder.items.reduce((sum, line) => sum + line.quantity, 0)
+  : [...state.order.values()].reduce((sum, qty) => sum + qty, 0);
+const lineDetails = (item) => (item.details?.labels ?? []).map(esc).join(' · ');
 
 /* ---------- API ---------- */
 class ApiError extends Error {
@@ -229,6 +232,7 @@ async function loadOrders() {
 
   if (state.pendingOrder && !orders.some((o) => o.id === state.pendingOrder.id)) {
     state.pendingOrder = null;
+    closeModal('#payModal');
     renderOrder();
   }
   $('#ordersCount').textContent = orders.length;
@@ -243,7 +247,7 @@ function renderOrders() {
         <span class="porder-who">${esc(o.customer_name || 'Cliente')}<small>hace ${minutesAgo(o.created_at)}</small></span>
         <span class="porder-total">${money(o.total)}</span>
       </div>
-      <ul>${o.items.map((i) => `<li>${i.quantity} × ${esc(i.name)}</li>`).join('')}</ul>
+      <ul>${o.items.map((i) => `<li>${i.quantity} × ${esc(i.name)}${lineDetails(i) ? `<small class="order-detail">${lineDetails(i)}</small>` : ''}</li>`).join('')}</ul>
       ${o.note ? `<p class="porder-note">📝 ${esc(o.note)}</p>` : ''}
       <div class="porder-actions">
         <button class="btn btn-ghost btn-sm" type="button" data-cancel="${o.id}">Cancelar</button>
@@ -285,21 +289,11 @@ $('#ordersList').addEventListener('click', async (e) => {
 function loadOrderIntoCart(order) {
   if (!order) return;
   state.order.clear();
-  const problems = [];
-
-  order.items.forEach((item) => {
-    const product = productById(item.product_id);
-    if (!product) return problems.push(`${item.name} ya no está a la venta`);
-    const qty = Math.min(item.quantity, product.stock);
-    if (qty < item.quantity) problems.push(`solo hay ${product.stock} de ${product.name}`);
-    if (qty > 0) state.order.set(product.id, qty);
-  });
-
   state.pendingOrder = order;
   closeModal('#ordersModal');
   showView('sell');
-  if (problems.length) toast(`Revisa el pedido: ${problems.join(', ')}.`, { error: true, timeout: 7000 });
-  else toast(`Pedido #${order.id} cargado. Revisa y cobra.`);
+  $('#order').classList.add('is-open');
+  toast(`Pedido #${order.id} cargado. Revisa y cobra.`);
 }
 
 /* ==========================================================
@@ -322,7 +316,9 @@ async function loadCatalog() {
 }
 
 function renderMenu() {
-  const withProducts = state.categories.filter((c) => state.products.some((p) => p.category_id === c.id));
+  const withProducts = state.categories
+    .filter((category) => state.products.some((product) => product.category_id === category.id))
+    .sort((a, b) => Number(a.name === 'Extras & Toppings') - Number(b.name === 'Extras & Toppings'));
   if (!withProducts.some((c) => c.id === state.category)) state.category = withProducts[0]?.id ?? null;
 
   $('#cats').innerHTML = withProducts.map((c) => {
@@ -368,6 +364,7 @@ $('#grid').addEventListener('click', (e) => {
 });
 
 function changeQty(id, delta) {
+  if (state.pendingOrder) return toast('Suelta el pedido web para iniciar una venta de mostrador.');
   const product = productById(id);
   if (!product) return;
   const qty = (state.order.get(id) || 0) + delta;
@@ -386,22 +383,26 @@ function renderOrder() {
       <button type="button" class="link-btn" id="orderFromClear">Soltar</button>`;
     $('#orderFromClear').onclick = () => { state.pendingOrder = null; state.order.clear(); renderMenu(); };
   }
-  $('#lines').innerHTML = lines.length ? lines.map(([id, qty]) => {
+  const hasItems = orderCount() > 0;
+  $('#lines').innerHTML = from ? from.items.map((item) => `<div class="line">
+      <div><div class="nm">${item.quantity} × ${esc(item.name)}</div><small class="order-detail">${lineDetails(item)}</small></div>
+      <span class="sub">${money(item.subtotal)}</span>
+    </div>`).join('') : lines.length ? lines.map(([id, qty]) => {
     const p = productById(id);
     return `<div class="line">
       <div><div class="nm">${esc(p.emoji)} ${esc(p.name)}</div><div class="unit">${money(p.price)} c/u</div></div>
       <span class="sub">${money(p.price * qty)}</span>
       <div class="stepper"><button type="button" data-id="${id}" data-d="-1" aria-label="Quitar uno">−</button><span>${qty}</span><button type="button" data-id="${id}" data-d="1" aria-label="Agregar uno">+</button></div>
     </div>`;
-  }).join('') : '<div class="empty"><span class="big-emoji">🐙</span>Toca un producto<br>para agregarlo al pedido</div>';
+  }).join('') : '<div class="empty"><span class="big-emoji">🍗</span>Toca un producto<br>para agregarlo al pedido</div>';
 
   const total = orderTotal();
   $('#total').textContent = money(total);
-  $('#btnPay').disabled = !lines.length;
-  $('#btnPay').textContent = lines.length ? `Cobrar ${money(total)}` : 'Cobrar';
+  $('#btnPay').disabled = !hasItems;
+  $('#btnPay').textContent = hasItems ? `Cobrar ${money(total)}` : 'Cobrar';
   $('#orderCount').textContent = orderCount();
   $('#orderToggleTotal').textContent = money(total);
-  $('#orderToggle').classList.toggle('is-empty', !lines.length);
+  $('#orderToggle').classList.toggle('is-empty', !hasItems);
 }
 
 $('#lines').addEventListener('click', (e) => {
@@ -410,7 +411,7 @@ $('#lines').addEventListener('click', (e) => {
 });
 
 $('#btnClear').onclick = async () => {
-  if (!state.order.size) return;
+  if (!orderCount()) return;
   if (await ask('¿Vaciar el pedido actual?', 'Sí, vaciar', 'No')) { state.order.clear(); state.pendingOrder = null; renderMenu(); }
 };
 
@@ -486,8 +487,9 @@ $('#btnConfirm').onclick = async () => {
       body: {
         payment_method: state.method,
         paid: state.method === 'efectivo' ? parseFloat($('#paid').value) : null,
-        items: [...state.order].map(([id, qty]) => ({ id, qty })),
-        order_id: state.pendingOrder?.id ?? null,
+        ...(state.pendingOrder
+          ? { order_id: state.pendingOrder.id }
+          : { items: [...state.order].map(([id, qty]) => ({ id, qty })) }),
       },
     });
 
@@ -777,7 +779,7 @@ function renderSales(a) {
     <td class="num">${folio(s.folio)}</td>
     <td>${timeOf(s.created_at)}</td>
     <td><span class="tag ${s.payment_method === 'tarjeta' ? 'card' : 'cash'}">${s.payment_method === 'tarjeta' ? '💳 Tarjeta' : '💵 Efectivo'}</span></td>
-    <td>${s.items.map((i) => `${i.quantity}× ${esc(i.product_name)}`).join(', ')}</td>
+    <td>${s.items.map((i) => `${i.quantity}× ${esc(i.product_name)}${lineDetails(i) ? ` (${lineDetails(i)})` : ''}`).join(', ')}</td>
     <td class="num">${money(s.total)}</td>
     <td><button type="button" class="btn btn-ghost btn-sm" data-sale="${s.id}" aria-label="Reimprimir ticket">🖨️</button></td></tr>`).join('')
     : '<tr><td colspan="6" class="empty-row">Aún no hay ventas hoy.</td></tr>';
@@ -800,6 +802,7 @@ function renderSettings(a) {
   if ($('#settingsForm').contains(document.activeElement)) return;
   $('#sName').value = a.settings.business_name;
   $('#sFooter').value = a.settings.ticket_footer;
+  $('#sWhatsApp').value = a.settings.whatsapp ?? '';
   $('#sOpening').value = a.settings.opening_cash;
   $('#sPin').value = '';
 }
@@ -809,6 +812,7 @@ $('#settingsForm').addEventListener('submit', async (e) => {
   const body = {
     business_name: $('#sName').value.trim(),
     ticket_footer: $('#sFooter').value.trim(),
+    whatsapp: $('#sWhatsApp').value.trim() || null,
     opening_cash: parseFloat($('#sOpening').value) || 0,
   };
   if ($('#sPin').value) body.business_pin = $('#sPin').value;
@@ -838,9 +842,10 @@ function printTicket(sale) {
     <h1>${esc(state.settings.business_name)}</h1>
     <div class="c">Ticket ${folio(sale.folio)}<br>${d.toLocaleDateString('es-MX')} ${timeOf(sale.created_at)}</div>
     <hr>
-    ${sale.items.map((i) => `<div>${i.quantity} x ${esc(i.product_name)}</div>${row(`&nbsp;&nbsp;@ ${money(i.price)}`, money(i.subtotal))}`).join('')}
+    ${sale.items.map((i) => `<div>${i.quantity} x ${esc(i.product_name)}</div>${lineDetails(i) ? `<div>${lineDetails(i)}</div>` : ''}${row(`&nbsp;&nbsp;@ ${money(i.price)}`, money(i.subtotal))}`).join('')}
     <hr>
-    ${row('TOTAL', money(sale.total), 'big')}
+    ${row('TOTAL MXN', money(sale.total), 'big')}
+    ${sale.items.every((item) => item.details?.calories != null) ? row('Calorías aprox.', `${sale.items.reduce((sum, item) => sum + item.details.calories * item.quantity, 0)} kcal`) : ''}
     ${row(sale.payment_method === 'tarjeta' ? 'Tarjeta' : 'Efectivo', money(sale.paid))}
     ${sale.payment_method === 'efectivo' ? row('Cambio', money(sale.change)) : ''}
     <hr>
